@@ -378,12 +378,34 @@
           <p class="text-xs text-amber-700 font-semibold">Guru belum mengisi nama Mata Pelajaran untuk PG. Jawaban tidak dapat dikirim sampai diisi.</p>
         </div>
         <div class="flex border-b border-slate-200 gap-4">
+          <button id="btn-mode-soal" onclick="switchPGMode('soal')" class="hidden pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2">
+            <i data-lucide="list-checks" class="w-4 h-4"></i> Soal PG
+          </button>
           <button id="btn-mode-bubble" onclick="switchPGMode('bubble')" class="pb-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2">
             <i data-lucide="circle-dot" class="w-4 h-4"></i> Bubble Mode
           </button>
           <button id="btn-mode-bulk" onclick="switchPGMode('bulk')" class="pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2">
             <i data-lucide="keyboard" class="w-4 h-4"></i> Bulk Mode
           </button>
+        </div>
+
+        <!-- SOAL PG (MURID) -->
+        <div id="mode-soal-container" class="hidden bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="font-bold text-slate-800 text-lg">Soal PG</h3>
+              <p id="soal-pg-progress" class="text-xs text-slate-400 mt-0.5"></p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Mata Pelajaran</p>
+              <p id="mapel-display-soal" class="mapel-glow text-base">-</p>
+            </div>
+          </div>
+          <div id="soal-pg-dots" class="flex flex-wrap gap-1.5"></div>
+          <div id="soal-pg-body"></div>
+          <div class="text-center">
+            <button type="button" onclick="soalPGPakaiModeLain()" class="text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline">Pakai Bubble / Bulk Mode</button>
+          </div>
         </div>
 
         <!-- BUBBLE -->
@@ -775,6 +797,40 @@
           <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
           <p id="kunci-warning-text" class="text-xs text-amber-700 font-semibold"></p>
         </div>
+
+        <!-- CARD: PG MENGGUNAKAN SOAL -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i data-lucide="list-checks" class="w-5 h-5 text-indigo-600"></i> PG Menggunakan Soal
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Jika aktif, murid mengerjakan soal PG satu per satu di menu Jawaban PG.</p>
+            </div>
+            <input type="checkbox" id="config-soal-pg-active" onchange="onSoalPGToggleChanged()" class="w-5 h-5 accent-indigo-600 cursor-pointer shrink-0">
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="block text-xs font-semibold text-slate-500">Tempel soal (misal dari ChatGPT)</label>
+              <textarea id="config-soal-pg-text" rows="10" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="1. Apa arti kata &quot;gigih&quot;?&#10;A. Berjuang&#10;B. Pantang menyerah**&#10;C. Menyerah&#10;D. Pasrah&#10;&#10;2. Sinonim &quot;tabah&quot; adalah ...&#10;A. Sabar**&#10;B. Marah&#10;C. Takut&#10;D. Malas"></textarea>
+              <p class="text-[10px] text-slate-400">Setiap soal diawali nomor. Tandai kunci jawaban dengan <strong>**</strong> di akhir pilihan yang benar.</p>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="muatSoalPGDariTeks()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95">
+                  <i data-lucide="download" class="w-4 h-4"></i> Muat dari teks
+                </button>
+                <button onclick="hapusSemuaSoalPG()" class="bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95">
+                  <i data-lucide="eraser" class="w-4 h-4"></i> Hapus semua soal
+                </button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-xs font-semibold text-slate-500">Preview soal & kunci</label>
+              <div id="soal-pg-preview-list" class="space-y-1.5 max-h-72 overflow-y-auto"></div>
+              <p class="text-[10px] text-slate-400">Kunci terisi otomatis ke matriks di bawah. Klik <strong>Simpan</strong> di bawah untuk menyimpan semuanya.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4 lg:col-span-1">
             <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
@@ -826,14 +882,26 @@
             </div>
             <p class="text-[10px] text-slate-400 -mt-2 flex items-center gap-1"><i data-lucide="info" class="w-3 h-3"></i> Nama mata pelajaran akan disimpan bersama kunci jawaban di bawah.</p>
             <div id="kunci-pg-matrix" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[350px] overflow-y-auto pr-2"></div>
-            <div class="flex justify-end gap-2 pt-3">
-              <button onclick="hapusSemuaKunciPG()" class="bg-rose-50 text-rose-600 border border-rose-200 font-semibold px-5 py-3 rounded-xl hover:bg-rose-100 active:scale-95 transition-all flex items-center gap-2">
-                <i data-lucide="eraser" class="w-4 h-4"></i> Hapus
-              </button>
-              <!-- FIX: Tombol ini sekarang juga menyimpan Mata Pelajaran PG -->
-              <button onclick="savePGKeyMatrix(event)" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-indigo-700 active:scale-95 transition-all shadow-md flex items-center gap-2">
-                <i data-lucide="save" class="w-4 h-4"></i> Simpan
-              </button>
+            <div class="flex items-center justify-between flex-wrap gap-3 pt-3">
+              <!-- Waktu pembuatan kunci (kiri, di samping kiri tombol Hapus) -->
+              <div class="flex items-end gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Waktu Pembuatan Soal</label>
+                  <input type="datetime-local" id="config-waktu-pg" onchange="onWaktuManualChanged('pg')" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <label class="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 cursor-pointer pb-2.5">
+                  <input type="checkbox" id="config-waktu-pg-auto" checked onchange="onWaktuAutoToggle('pg')" class="w-4 h-4 accent-indigo-600 cursor-pointer"> Otomatis
+                </label>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="hapusSemuaKunciPG()" class="bg-rose-50 text-rose-600 border border-rose-200 font-semibold px-5 py-3 rounded-xl hover:bg-rose-100 active:scale-95 transition-all flex items-center gap-2">
+                  <i data-lucide="eraser" class="w-4 h-4"></i> Hapus
+                </button>
+                <!-- FIX: Tombol ini sekarang juga menyimpan Mata Pelajaran PG -->
+                <button onclick="savePGKeyMatrix(event)" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-indigo-700 active:scale-95 transition-all shadow-md flex items-center gap-2">
+                  <i data-lucide="save" class="w-4 h-4"></i> Simpan
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -893,7 +961,17 @@
             <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
               <ul id="config-esai-questions-ul" class="divide-y divide-slate-100 space-y-2"></ul>
             </div>
-            <div class="flex justify-end">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+              <!-- Waktu pembuatan soal (kiri) -->
+              <div class="flex items-end gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Waktu Pembuatan Soal</label>
+                  <input type="datetime-local" id="config-waktu-esai" onchange="onWaktuManualChanged('esai')" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <label class="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 cursor-pointer pb-2.5">
+                  <input type="checkbox" id="config-waktu-esai-auto" checked onchange="onWaktuAutoToggle('esai')" class="w-4 h-4 accent-indigo-600 cursor-pointer"> Otomatis
+                </label>
+              </div>
               <!-- FIX: Tombol ini sekarang juga menyimpan Mata Pelajaran Esai -->
               <button onclick="saveEssayConfig(event)" class="bg-indigo-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2">
                 <i data-lucide="save" class="w-4 h-4"></i> Simpan Soal & Mata Pelajaran
@@ -1256,7 +1334,9 @@ FORMAT KELUARAN (satu baris per murid):
         aktifkanDaftarMandiri: false,
         daftarSekolah: [],
         daftarKelas: [],
-        halamanAwalMurid: 'jawaban-pg'
+        halamanAwalMurid: 'jawaban-pg',
+        aktifkanSoalPG: false,
+        soalPGList: []
       },
       pg: [
         { timestamp: new Date().toISOString(), sekolah: "SMA Negeri 1 Jakarta", kelas: "XI-MIPA 1", nama: "Budi Santoso", jawaban: "ABCDE", benar: 3, salah: 2, kosong: 0, nilai: 60.00, rowIdx: 2 }
@@ -1272,7 +1352,7 @@ FORMAT KELUARAN (satu baris per murid):
     // GANTI URL DI BAWAH INI dengan URL deployment Apps Script Anda
     // (hasil dari Deploy > Manage deployments, yang diakhiri /exec)
     // ============================================================
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbysihkx0yUFzWgR7k6GpQL2IOklAJhjlDDrQivjF0krjvr-ObbYpfAJykdZHNtt4G1PXQ/exec';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz2DbDIDKlbfQLd2BuMhZ76x-8KDnoD9fnbKVNytYCBMlTUD2u4TNjRPjS9V2G8dy2-aw/exec';
 
     // ============================================================
     // SYNC OVERLAY — loading modern saat kirim/ambil data Spreadsheet
@@ -1380,7 +1460,8 @@ FORMAT KELUARAN (satu baris per murid):
         { id: 'guru-soal-esai', label: 'Soal Esai', icon: 'book' },
         { id: 'guru-koreksi-ai', label: 'Koreksi AI', icon: 'wand' },
         { id: 'guru-pengaturan', label: 'Pengaturan', icon: 'settings' },
-        { id: 'guru-reset', label: 'Reset', icon: 'refresh-ccw' }
+        { id: 'guru-reset', label: 'Reset', icon: 'refresh-ccw' },
+        { id: 'guru-spreadsheet', label: 'Spreadsheet', icon: 'file-spreadsheet' }
       ]
     };
 
@@ -1674,6 +1755,11 @@ FORMAT KELUARAN (satu baris per murid):
       const rawSalah = parseFloat(appData.config.bobotSalah);
       if (salahEl) salahEl.value = (!isNaN(rawSalah)) ? rawSalah : 0;
 
+      const soalPGActiveEl = document.getElementById('config-soal-pg-active');
+      if (soalPGActiveEl) soalPGActiveEl.checked = !!appData.config.aktifkanSoalPG;
+      const soalPGTextEl = document.getElementById('config-soal-pg-text');
+      if (soalPGTextEl && !soalPGTextEl.value.trim() && getSoalPGList().length > 0) soalPGTextEl.value = soalPGListToText(getSoalPGList());
+
       const sembunyikanEsaiEl = document.getElementById('config-sembunyikan-esai-active');
       if (sembunyikanEsaiEl) sembunyikanEsaiEl.checked = !!appData.config.sembunyikanSkorEsai;
       const passActiveEl = document.getElementById('config-student-pass-active');
@@ -1695,6 +1781,8 @@ FORMAT KELUARAN (satu baris per murid):
       if (stimulusTextarea) stimulusTextarea.value = appData.config.teksBacaan || '';
       const mapelEsaiInput = document.getElementById('config-mapel-esai');
       if (mapelEsaiInput) mapelEsaiInput.value = appData.config.mapelEsai || '';
+      renderWaktuSoal('esai');
+      renderWaktuSoal('pg');
 
       const stimulusText = (appData.config.teksBacaan || '').trim();
       const stimulusCard = document.getElementById('esai-stimulus-card');
@@ -1791,7 +1879,9 @@ FORMAT KELUARAN (satu baris per murid):
     // switchPGMode
     // ============================================================
     function switchPGMode(mode) {
+      if (mode === 'soal' && !isSoalPGAktif()) mode = 'bubble';
       currentPGMode = mode;
+      if (syncSoalPGTabs(mode)) return;
       const stName = document.getElementById('dd-murid') ? document.getElementById('dd-murid').value : '';
       const bubbleContainer = document.getElementById('mode-bubble-container');
       const bulkContainer = document.getElementById('mode-bulk-container');
@@ -1858,7 +1948,7 @@ FORMAT KELUARAN (satu baris per murid):
         const isActive = selectedSubNav === item.id;
         const btn = document.createElement('button');
         btn.id = `sub-btn-${item.id}`;
-        btn.onclick = () => setSubNav(item.id);
+        btn.onclick = () => item.id === 'guru-spreadsheet' ? bukaSpreadsheet() : setSubNav(item.id);
         btn.className = `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm font-medium transition-all duration-150 ${isActive ? "bg-indigo-50 text-indigo-700 shadow-sm font-semibold" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`;
         btn.innerHTML = `<i data-lucide="${item.icon}" class="w-5 h-5"></i> <span>${item.label}</span>`;
         container.appendChild(btn);
@@ -1950,7 +2040,11 @@ FORMAT KELUARAN (satu baris per murid):
         if (passField) passField.value = generateRandomPassword();
         drawAllStudentsTable();
       }
-      if (target === 'jawaban-pg') { switchPGMode(currentPGMode || 'bubble'); generatePGInputs(); bubbleAnswers = {}; bulkVerifiedStudents = new Set(); }
+      if (target === 'jawaban-pg') {
+        if (isSoalPGAktif()) { if (!soalPGOverride) currentPGMode = 'soal'; }
+        else if (currentPGMode === 'soal') currentPGMode = 'bubble';
+        switchPGMode(currentPGMode || 'bubble'); generatePGInputs(); bubbleAnswers = {}; bulkVerifiedStudents = new Set();
+      }
       if (target === 'jawaban-esai') { renderEssayFeedbackForSelectedStudent(); updateKirimButtonsState(); }
       if (target === 'daftar-mandiri') { resetDaftarMandiriForm(); }
       const sidebar = document.getElementById('sidebar-container');
@@ -2573,6 +2667,7 @@ FORMAT KELUARAN (satu baris per murid):
     }
 
     function checkKunciWarning() {
+      renderSoalPGPreviewGuru();
       const numQuestions = appData.config.jumlahSoal || 5;
       const emptyNums = [];
       for (let i = 1; i <= numQuestions; i++) {
@@ -2639,6 +2734,7 @@ FORMAT KELUARAN (satu baris per murid):
       // Simpan juga mata pelajaran PG
       appData.config.mapel = mapelVal || (document.getElementById('config-mapel') ? document.getElementById('config-mapel').value.trim() : '');
       updateMapelDisplays();
+      applyWaktuSoalSebelumSimpan('pg');
       updatePengaturanGuruOnBackend();
     }
 
@@ -2896,6 +2992,8 @@ FORMAT KELUARAN (satu baris per murid):
       autoExpandTextarea(input);
       drawEssayQuestionsList();
       showToast('1 soal berhasil ditambahkan.', 'success');
+      // Sekalian simpan agar tidak terlupa
+      saveEssayConfig(null, true);
     }
 
     // Tambah banyak soal sekaligus, dipisah dengan ";;" atau "..." (titik 3 atau lebih)
@@ -2911,6 +3009,8 @@ FORMAT KELUARAN (satu baris per murid):
       autoExpandTextarea(input);
       drawEssayQuestionsList();
       showToast(`${parts.length} soal berhasil ditambahkan sekaligus.`, 'success');
+      // Sekalian simpan agar tidak terlupa
+      saveEssayConfig(null, true);
     }
 
     function removeEssayQuestion(index) {
@@ -2918,9 +3018,74 @@ FORMAT KELUARAN (satu baris per murid):
     }
 
     // ============================================================
+    // WAKTU PEMBUATAN SOAL (Esai & Kunci PG)
+    // - Mode Otomatis (bawaan): waktu diisi jam sekarang saat tombol simpan diklik.
+    // - Mode Manual: aktif otomatis saat guru mengubah isi kolom waktu;
+    //   waktu tidak lagi ditimpa saat simpan.
+    // ============================================================
+    const WAKTU_SOAL_CFG = {
+      esai: { input: 'config-waktu-esai', auto: 'config-waktu-esai-auto', key: 'waktuSoalEsai', manualKey: 'waktuSoalEsaiManual' },
+      pg:   { input: 'config-waktu-pg',   auto: 'config-waktu-pg-auto',   key: 'waktuKunciPG',  manualKey: 'waktuKunciPGManual' }
+    };
+
+    function formatWaktuInput(date) {
+      const d = date instanceof Date ? date : new Date(date);
+      if (isNaN(d.getTime())) return '';
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function isWaktuManual(jenis) {
+      const c = WAKTU_SOAL_CFG[jenis];
+      const v = appData.config[c.manualKey];
+      return v === true || v === 'true';
+    }
+
+    function renderWaktuSoal(jenis) {
+      const c = WAKTU_SOAL_CFG[jenis];
+      const inputEl = document.getElementById(c.input);
+      const autoEl = document.getElementById(c.auto);
+      if (!inputEl || !autoEl) return;
+      const manual = isWaktuManual(jenis);
+      autoEl.checked = !manual;
+      const tersimpan = appData.config[c.key] ? formatWaktuInput(appData.config[c.key]) : '';
+      inputEl.value = tersimpan || formatWaktuInput(new Date());
+    }
+
+    function onWaktuAutoToggle(jenis) {
+      const c = WAKTU_SOAL_CFG[jenis];
+      const inputEl = document.getElementById(c.input);
+      const autoEl = document.getElementById(c.auto);
+      if (!inputEl || !autoEl) return;
+      appData.config[c.manualKey] = !autoEl.checked;
+      if (autoEl.checked) inputEl.value = formatWaktuInput(new Date());
+    }
+
+    function onWaktuManualChanged(jenis) {
+      const c = WAKTU_SOAL_CFG[jenis];
+      const autoEl = document.getElementById(c.auto);
+      if (autoEl) autoEl.checked = false;
+      appData.config[c.manualKey] = true;
+    }
+
+    // Dipanggil tepat sebelum konfigurasi dikirim/disimpan
+    function applyWaktuSoalSebelumSimpan(jenis) {
+      const c = WAKTU_SOAL_CFG[jenis];
+      const inputEl = document.getElementById(c.input);
+      if (isWaktuManual(jenis)) {
+        appData.config[c.key] = inputEl ? inputEl.value : (appData.config[c.key] || '');
+      } else {
+        const sekarang = formatWaktuInput(new Date());
+        appData.config[c.key] = sekarang;
+        if (inputEl) inputEl.value = sekarang;
+      }
+      appData.config[c.manualKey] = isWaktuManual(jenis);
+    }
+
+    // ============================================================
     // FIX: saveEssayConfig — sekarang juga menyimpan Mata Pelajaran Esai
     // ============================================================
-    function saveEssayConfig(event) {
+    function saveEssayConfig(event, langsung = false) {
       const mapelEsaiVal = document.getElementById('config-mapel-esai') ? document.getElementById('config-mapel-esai').value.trim() : '';
       if (!mapelEsaiVal) {
         showToast('Nama Mata Pelajaran Esai belum diisi!', 'warning');
@@ -2930,7 +3095,15 @@ FORMAT KELUARAN (satu baris per murid):
       appData.config.teksBacaan = document.getElementById('config-esai-stimulus').value;
       appData.config.mapelEsai = mapelEsaiVal;
       updateMapelDisplays();
-      triggerCustomModal("Simpan Soal & Mata Pelajaran", "Perbarui konfigurasi soal esai dan mata pelajaran?", "save", updatePengaturanGuruOnBackend);
+      const eksekusiSimpan = () => {
+        applyWaktuSoalSebelumSimpan('esai');
+        updatePengaturanGuruOnBackend();
+      };
+      if (langsung) {
+        eksekusiSimpan();
+      } else {
+        triggerCustomModal("Simpan Soal & Mata Pelajaran", "Perbarui konfigurasi soal esai dan mata pelajaran?", "save", eksekusiSimpan);
+      }
     }
 
     // ============================================================
@@ -3535,6 +3708,40 @@ if (!entry) {
     }
 
     // ============================================================
+    // SPREADSHEET (GURU) — satu klik langsung membuka spreadsheet
+    // GANTI tautan di bawah dengan URL Google Spreadsheet Anda
+    // ============================================================
+    let spreadsheetUrlCache = '';
+
+    function bukaSpreadsheet() {
+      const sidebar = document.getElementById('sidebar-container');
+      if (!sidebar.classList.contains('-translate-x-full') && window.innerWidth < 768) toggleSidebar();
+
+      if (!isGAS) { showToast('[Demo] Tidak terhubung ke spreadsheet.', 'warning'); return; }
+
+      // Sudah pernah diambil: langsung buka
+      if (spreadsheetUrlCache) { window.open(spreadsheetUrlCache, '_blank'); return; }
+
+      // Buka tab kosong dulu (agar tidak diblokir popup), lalu arahkan setelah tautan didapat
+      const win = window.open('', '_blank');
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success && res.url) {
+            spreadsheetUrlCache = res.url;
+            if (win) win.location.href = res.url; else window.open(res.url, '_blank');
+          } else {
+            if (win) win.close();
+            showToast((res && res.error) ? res.error : 'Gagal mengambil tautan spreadsheet.', 'error');
+          }
+        })
+        .withFailureHandler(err => {
+          if (win) win.close();
+          showToast('Gagal: ' + (err && err.message ? err.message : 'Terjadi kesalahan.'), 'error');
+        })
+        .getSpreadsheetUrl();
+    }
+
+    // ============================================================
     // RESET DATA (GURU)
     // ============================================================
     function triggerResetData(event) {
@@ -3555,7 +3762,7 @@ if (!entry) {
 
     function doResetData(pilihan) {
       if (pilihan.mapelPG) appData.config.mapel = '';
-      if (pilihan.kunciPG) { appData.config.kunciPG = ''; pgKeyMatrixState = {}; }
+      if (pilihan.kunciPG) { appData.config.kunciPG = ''; pgKeyMatrixState = {}; appData.config.soalPGList = []; const tsp = document.getElementById('config-soal-pg-text'); if (tsp) tsp.value = ''; }
       if (pilihan.mapelEsai) appData.config.mapelEsai = '';
       if (pilihan.soalEsai) { appData.config.teksBacaan = ''; appData.config.soalEsaiList = []; }
       if (pilihan.jawabanPG) appData.pg = [];
@@ -3582,6 +3789,361 @@ if (!entry) {
         setSubNav('guru-reset');
       }
     }
+
+
+
+    // ============================================================
+    // PG MENGGUNAKAN SOAL — STATE & HELPER
+    // ============================================================
+    let soalPGState = { idx: 0, ans: {}, skipped: {}, review: false };
+    let soalPGOverride = false; // true jika murid/guru memilih Bubble/Bulk saat Soal PG aktif
+
+    function getSoalPGList() {
+      return Array.isArray(appData.config.soalPGList) ? appData.config.soalPGList : [];
+    }
+    function isSoalPGAktif() {
+      return !!appData.config.aktifkanSoalPG && getSoalPGList().length > 0;
+    }
+    function resetSoalPGState() {
+      soalPGState = { idx: 0, ans: {}, skipped: {}, review: false };
+    }
+
+    // ============================================================
+    // GURU: PARSE TEKS SOAL (kunci ditandai ** di akhir pilihan)
+    // ============================================================
+    function parseSoalPGText(raw) {
+      const lines = String(raw || '').replace(/\r\n?/g, '\n').split('\n');
+      const hasil = [];
+      let cur = null;
+      let jedaKosong = false;
+      const tutup = () => { if (cur && cur.soal.trim() && cur.opsi.length >= 2) hasil.push(cur); cur = null; };
+
+      lines.forEach(line => {
+        const adaBintang = line.includes('**');
+        const bersih = line.replace(/\*\*/g, '').trim();
+        if (!bersih) { jedaKosong = true; return; }
+        const adaJeda = jedaKosong;
+        jedaKosong = false;
+        if (/^(jawaban|kunci)\s*:/i.test(bersih)) return;
+
+        const mOpsi = bersih.match(/^\(?([A-Ea-e])[\.\)]\s+(.+)$/);
+        if (mOpsi && cur) {
+          const huruf = mOpsi[1].toUpperCase();
+          cur.opsi.push({ huruf: huruf, teks: mOpsi[2].trim() });
+          if (adaBintang && !cur.kunci.includes(huruf)) cur.kunci.push(huruf);
+          return;
+        }
+        const mNomor = bersih.match(/^(\d+)\s*[\.\)]\s*(.+)$/);
+        if (mNomor) { tutup(); cur = { soal: mNomor[2].trim(), opsi: [], kunci: [] }; return; }
+
+        if (cur && cur.opsi.length === 0) { cur.soal += '\n' + bersih; return; }
+        if (cur && cur.opsi.length > 0 && !adaJeda) { cur.opsi[cur.opsi.length - 1].teks += ' ' + bersih; return; }
+        tutup();
+        cur = { soal: bersih, opsi: [], kunci: [] };
+      });
+      tutup();
+      return hasil;
+    }
+
+    function soalPGListToText(list) {
+      return (list || []).map((q, i) => {
+        const kunci = Array.isArray(q.kunci) ? q.kunci : [];
+        const opsi = q.opsi.map(o => `${o.huruf}. ${o.teks}${kunci.includes(o.huruf) ? '**' : ''}`).join('\n');
+        return `${i + 1}. ${q.soal}\n${opsi}`;
+      }).join('\n\n');
+    }
+
+    function muatSoalPGDariTeks() {
+      const ta = document.getElementById('config-soal-pg-text');
+      const list = parseSoalPGText(ta ? ta.value : '');
+      if (list.length === 0) {
+        showToast('Tidak ada soal terdeteksi. Pastikan tiap soal diawali nomor dan pilihan berformat A. B. C. D.', 'warning');
+        return;
+      }
+      let maxIdx = 3;
+      list.forEach(q => q.opsi.forEach(o => { maxIdx = Math.max(maxIdx, o.huruf.charCodeAt(0) - 64); }));
+      const minIdx = Math.min(...list.map(q => Math.max(...q.opsi.map(o => o.huruf.charCodeAt(0) - 64))));
+      const pil = maxIdx >= 5 ? 'A-E' : (minIdx <= 3 && maxIdx <= 3 ? 'A-C' : 'A-D');
+
+      appData.config.soalPGList = list;
+      appData.config.jumlahSoal = list.length;
+      appData.config.pilihanPG = pil;
+      appData.config.kunciPG = list.map(q => (q.kunci || []).join(',')).join(';');
+      appData.config.bobotBenar = parseFloat((100 / list.length).toFixed(2));
+
+      const jumlahEl = document.getElementById('config-kunci-jumlah');
+      if (jumlahEl) jumlahEl.value = list.length;
+      const pengecohEl = document.getElementById('config-kunci-pengecoh');
+      if (pengecohEl) pengecohEl.value = pil;
+      const benarEl = document.getElementById('config-bobot-benar');
+      if (benarEl) benarEl.value = appData.config.bobotBenar;
+
+      drawPGKeyMatrix();
+      // Sekalian jalankan tombol Simpan agar tidak terlupa.
+      // Jika ada soal tanpa kunci, savePGKeyMatrix otomatis menampilkan dialog konfirmasi.
+      // Jika Mata Pelajaran PG belum diisi, muncul peringatan dan penyimpanan dibatalkan.
+      savePGKeyMatrix();
+    }
+
+    function hapusSemuaSoalPG() {
+      triggerCustomModal('Hapus Semua Soal PG', 'Semua soal PG yang dimuat akan dikosongkan. Lanjutkan?', 'trash-2', () => {
+        appData.config.soalPGList = [];
+        const ta = document.getElementById('config-soal-pg-text');
+        if (ta) ta.value = '';
+        renderSoalPGPreviewGuru();
+        showToast('Soal PG dikosongkan. Klik Simpan untuk menyimpan perubahan.', 'warning');
+      }, 'red');
+    }
+
+    function onSoalPGToggleChanged() {
+      const el = document.getElementById('config-soal-pg-active');
+      if (!el) return;
+      appData.config.aktifkanSoalPG = el.checked;
+      if (el.checked && getSoalPGList().length === 0) {
+        showToast('Soal PG belum dimuat. Tempel soal lalu klik "Muat dari teks".', 'warning');
+      }
+      saveToggleConfig();
+    }
+
+    function renderSoalPGPreviewGuru() {
+      const box = document.getElementById('soal-pg-preview-list');
+      if (!box) return;
+      const list = getSoalPGList();
+      if (list.length === 0) {
+        box.innerHTML = '<p class="text-[11px] text-slate-400 text-center py-3">Belum ada soal dimuat.</p>';
+        return;
+      }
+      const n = appData.config.jumlahSoal || list.length;
+      let html = '';
+      if (n !== list.length) {
+        html += `<p class="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">Jumlah soal tertempel (${list.length}) berbeda dari Jumlah Soal PG (${n}). Samakan agar penilaian akurat.</p>`;
+      }
+      list.forEach((q, i) => {
+        const kunci = Array.isArray(pgKeyMatrixState[i + 1]) ? pgKeyMatrixState[i + 1] : [];
+        const badge = kunci.length
+          ? `<span class="shrink-0 px-2 py-0.5 text-[10px] font-extrabold bg-emerald-100 text-emerald-700 rounded-full">Kunci ${kunci.join(', ')}</span>`
+          : `<span class="shrink-0 px-2 py-0.5 text-[10px] font-extrabold bg-amber-100 text-amber-700 rounded-full">Belum ada kunci</span>`;
+        let ringkas = String(q.soal).replace(/\s+/g, ' ');
+        if (ringkas.length > 60) ringkas = ringkas.substring(0, 60) + '...';
+        html += `<div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50">
+          <span class="text-xs text-slate-700 truncate">${i + 1}. ${escapeHtml(ringkas)}</span>
+          <span class="flex items-center gap-1.5 shrink-0"><span class="text-[10px] text-slate-400">${q.opsi.length} opsi</span>${badge}</span>
+        </div>`;
+      });
+      box.innerHTML = html;
+    }
+
+    // ============================================================
+    // MURID: TAB & TAMPILAN SOAL PG
+    // ============================================================
+    function syncSoalPGTabs(mode) {
+      const aktif = isSoalPGAktif();
+      const btnSoal = document.getElementById('btn-mode-soal');
+      const btnBubble = document.getElementById('btn-mode-bubble');
+      const btnBulk = document.getElementById('btn-mode-bulk');
+      const soalContainer = document.getElementById('mode-soal-container');
+      const bubbleContainer = document.getElementById('mode-bubble-container');
+      const bulkContainer = document.getElementById('mode-bulk-container');
+
+      if (btnSoal) {
+        btnSoal.className = (mode === 'soal'
+          ? 'pb-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2'
+          : 'pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-600 flex items-center gap-2')
+          + (aktif ? '' : ' hidden');
+      }
+      if (soalContainer) soalContainer.classList.toggle('hidden', mode !== 'soal');
+
+      if (mode === 'soal') {
+        soalPGOverride = false;
+        if (bubbleContainer) bubbleContainer.classList.add('hidden');
+        if (bulkContainer) bulkContainer.classList.add('hidden');
+        if (btnBubble) btnBubble.classList.add('hidden');
+        if (btnBulk) btnBulk.classList.add('hidden');
+        renderSoalPG();
+        updateKirimButtonsState();
+        return true;
+      }
+      return false;
+    }
+
+    function soalPGPakaiModeLain() {
+      soalPGOverride = true;
+      switchPGMode('bubble');
+    }
+
+    function soalPGScrollAtas() {
+      const el = document.getElementById('mode-soal-container');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderSoalPG() {
+      const list = getSoalPGList();
+      const body = document.getElementById('soal-pg-body');
+      const dots = document.getElementById('soal-pg-dots');
+      const prog = document.getElementById('soal-pg-progress');
+      const mapelEl = document.getElementById('mapel-display-soal');
+      if (!body || !dots) return;
+      if (mapelEl) mapelEl.textContent = appData.config.mapel || '-';
+      const st = soalPGState;
+
+      if (list.length === 0) {
+        dots.innerHTML = '';
+        if (prog) prog.textContent = '';
+        body.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">Belum ada soal dari guru.</p>';
+        return;
+      }
+      if (st.idx >= list.length) st.idx = list.length - 1;
+      if (st.idx < 0) st.idx = 0;
+
+      const terjawab = list.filter((_, i) => st.ans[i] !== undefined).length;
+      if (prog) prog.textContent = st.review
+        ? `Periksa jawaban • ${terjawab}/${list.length} terjawab`
+        : `Soal ${st.idx + 1} dari ${list.length} • Terjawab ${terjawab}`;
+
+      dots.innerHTML = list.map((_, i) => {
+        let cls = 'bg-slate-50 text-slate-500 border-slate-200';
+        if (st.ans[i] !== undefined) cls = 'bg-emerald-50 text-emerald-700 border-emerald-300';
+        else if (st.skipped[i]) cls = 'bg-amber-50 text-amber-700 border-amber-300';
+        const cur = (!st.review && i === st.idx) ? ' ring-2 ring-indigo-500' : '';
+        return `<button type="button" onclick="soalPGKe(${i})" class="w-7 h-7 rounded-md border text-[11px] font-bold ${cls}${cur}">${i + 1}</button>`;
+      }).join('');
+
+      body.innerHTML = st.review ? buildSoalPGReviewHtml(list) : buildSoalPGQuestionHtml(list);
+      lucide.createIcons();
+    }
+
+    function buildSoalPGQuestionHtml(list) {
+      const st = soalPGState;
+      const q = list[st.idx];
+      const opsiHtml = q.opsi.map((o, j) => {
+        const sel = st.ans[st.idx] === j;
+        return `<button type="button" onclick="soalPGPilih(${j})" class="w-full flex items-start gap-3 text-left p-3 rounded-xl border transition-all active:scale-[0.98] ${sel ? 'bg-indigo-50 border-indigo-400' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}">
+          <span class="shrink-0 w-7 h-7 rounded-full border flex items-center justify-center text-xs font-extrabold ${sel ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-300'}">${o.huruf}</span>
+          <span class="text-sm text-slate-700 leading-relaxed pt-0.5">${escapeHtml(o.teks)}</span>
+        </button>`;
+      }).join('');
+      const kembaliOff = st.idx === 0 ? ' opacity-40' : '';
+      return `<div class="space-y-3">
+        <p class="text-sm font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap">${st.idx + 1}. ${escapeHtml(q.soal)}</p>
+        <div class="space-y-2">${opsiHtml}</div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button type="button" onclick="soalPGKembali()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-1.5 transition-all border border-slate-200 active:scale-95${kembaliOff}">
+            <i data-lucide="delete" class="w-4 h-4"></i> Kembali
+          </button>
+          <button type="button" onclick="soalPGLewati()" class="bg-amber-100 hover:bg-amber-200 text-amber-700 font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-1.5 transition-all border border-amber-200 active:scale-95">
+            <i data-lucide="skip-forward" class="w-4 h-4"></i> Lewati
+          </button>
+        </div>
+      </div>`;
+    }
+
+    function buildSoalPGReviewHtml(list) {
+      const st = soalPGState;
+      const items = list.map((q, i) => {
+        const a = st.ans[i];
+        const lain = q.opsi.map((o, j) => j === a ? '' : `<span><b class="font-bold text-slate-400 mr-1">${o.huruf}</b>${escapeHtml(o.teks)}</span>`).join('');
+        const dipilih = a === undefined
+          ? `<p class="text-xs font-semibold text-amber-700">Belum dijawab (dihitung kosong)</p>`
+          : `<div class="flex items-start gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1.5">
+               <span class="shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white text-[11px] font-extrabold flex items-center justify-center">${q.opsi[a].huruf}</span>
+               <span class="text-sm text-slate-700">${escapeHtml(q.opsi[a].teks)}</span>
+             </div>`;
+        return `<div onclick="soalPGKe(${i})" class="cursor-pointer border rounded-xl p-3 space-y-2 ${a === undefined ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}">
+          <p class="text-sm font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap">${i + 1}. ${escapeHtml(q.soal)}</p>
+          ${dipilih}
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">${a === undefined ? 'Pilihan' : 'Pilihan lain'}</p>
+            <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-500">${lain}</div>
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="space-y-3">
+        <p class="text-xs text-slate-500">Ketuk salah satu soal untuk mengubah jawabannya.</p>
+        <div class="space-y-2">${items}</div>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button type="button" onclick="soalPGPeriksaKembali()" class="py-3 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200 active:scale-95 transition-all">Periksa kembali</button>
+          <button type="button" id="btn-kirim-soal" onclick="soalPGKirim(event)" class="py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2">
+            <i data-lucide="send" class="w-4 h-4"></i> Kirim jawaban
+          </button>
+        </div>
+      </div>`;
+    }
+
+    // Cari soal belum terjawab berikutnya (menyambung ke depan, lalu kembali ke yang dilewati)
+    function soalPGBerikutnya() {
+      const n = getSoalPGList().length;
+      const st = soalPGState;
+      for (let k = 1; k < n; k++) {
+        const j = (st.idx + k) % n;
+        if (st.ans[j] === undefined) return j;
+      }
+      return -1;
+    }
+
+    function soalPGPilih(j) {
+      const st = soalPGState;
+      st.ans[st.idx] = j;
+      delete st.skipped[st.idx];
+      const nxt = soalPGBerikutnya();
+      if (nxt === -1) st.review = true; else st.idx = nxt;
+      renderSoalPG();
+      soalPGScrollAtas();
+    }
+
+    function soalPGLewati() {
+      const st = soalPGState;
+      if (st.ans[st.idx] === undefined) st.skipped[st.idx] = true;
+      const nxt = soalPGBerikutnya();
+      if (nxt === -1) st.review = true; else st.idx = nxt;
+      renderSoalPG();
+      soalPGScrollAtas();
+    }
+
+    function soalPGKembali() {
+      const st = soalPGState;
+      if (st.idx <= 0) { showToast('Ini soal pertama.', 'info'); return; }
+      st.idx--;
+      renderSoalPG();
+      soalPGScrollAtas();
+    }
+
+    function soalPGKe(i) {
+      soalPGState.idx = i;
+      soalPGState.review = false;
+      renderSoalPG();
+      soalPGScrollAtas();
+    }
+
+    function soalPGPeriksaKembali() {
+      const list = getSoalPGList();
+      const st = soalPGState;
+      const pertama = list.findIndex((_, i) => st.ans[i] === undefined);
+      st.idx = pertama === -1 ? 0 : pertama;
+      st.review = false;
+      renderSoalPG();
+      soalPGScrollAtas();
+    }
+
+    function soalPGKirim(event) {
+      if (!isMapelPGFilled()) return;
+      const btn = event ? event.currentTarget : null;
+      const identitas = validateIdentitas();
+      if (!identitas) return;
+      const list = getSoalPGList();
+      const n = appData.config.jumlahSoal || list.length;
+      let jwb = '';
+      for (let i = 0; i < n; i++) {
+        const a = soalPGState.ans[i];
+        jwb += (a !== undefined && list[i] && list[i].opsi[a]) ? list[i].opsi[a].huruf : ' ';
+      }
+      verifyStudentPassword(identitas, () => {
+        setButtonLoading(btn, true, 'Mengirim...');
+        prosesSimpanPG(identitas, jwb, () => { resetSoalPGState(); }, btn);
+      });
+    }
+
+
+
 
     // ============================================================
     // FORM PG: BUBBLE & BULK
@@ -5500,11 +6062,26 @@ renderList(listEsaiEl, belumEsai, 'sky');
         // (bukan link web wa.me) agar OS tidak menampilkan dialog pilihan
         // aplikasi ("Buka dengan Browser/WhatsApp?"). Skema ini langsung
         // memanggil aplikasi WhatsApp jika terpasang di perangkat.
+        const isAndroid = /Android/i.test(navigator.userAgent);
         const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const teks = encodeURIComponent(pesan);
+
+        if (isAndroid) {
+          // Android: intent langsung ke aplikasi WhatsApp, biasanya tanpa dialog izin.
+          // Halaman aplikasi tidak berpindah karena yang dibuka adalah aplikasi.
+          // Jika WhatsApp belum terpasang, otomatis diarahkan ke wa.me.
+          window.location.href =
+            `intent://send?text=${teks}#Intent;scheme=whatsapp;package=com.whatsapp;` +
+            `S.browser_fallback_url=${encodeURIComponent('https://wa.me/?text=' + pesan)};end`;
+          showToast('Membuka WhatsApp...', 'success');
+          return;
+        }
+
         const waUrl = isMobile
-          ? `whatsapp://send?text=${encodeURIComponent(pesan)}`
-          : `https://web.whatsapp.com/send?text=${encodeURIComponent(pesan)}`;
-        window.location.href = waUrl;
+          ? `whatsapp://send?text=${teks}`
+          : `https://web.whatsapp.com/send?text=${teks}`;
+        const waWin = window.open(waUrl, '_blank', 'noopener');
+        if (!waWin && !isMobile) throw new Error('Popup diblokir');
         showToast('Membuka WhatsApp...', 'success');
         return;
       } catch (err) {
@@ -5541,7 +6118,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
           document.body.removeChild(ta);
         }
       } finally {
-        setTimeout(() => { suppressAntiCheatBlur = false; }, 1000);
+        setTimeout(() => { suppressAntiCheatBlur = false; }, 3000);
       }
     }
 
@@ -5694,6 +6271,15 @@ renderList(listEsaiEl, belumEsai, 'sky');
       return (str || '').trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'Umum';
     }
 
+    // Stempel waktu untuk nama file, contoh: (Sabtu, 17-10-2026 11:15:00:123)
+    function stempelWaktuFile() {
+      const d = new Date();
+      const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'][d.getDay()];
+      const p2 = n => String(n).padStart(2, '0');
+      const ms = String(d.getMilliseconds()).padStart(3, '0');
+      return `(${hari}, ${p2(d.getDate())}-${p2(d.getMonth() + 1)}-${d.getFullYear()} ${p2(d.getHours())}.${p2(d.getMinutes())}.${p2(d.getSeconds())}.${ms})`;
+    }
+
     // FIX: Escape karakter HTML khusus (&, <, >, ", ') pada teks yang disisipkan
     // ke dalam template HTML (Print/PDF), agar nama/sekolah/kelas yang mengandung
     // karakter seperti "&" tidak tampil rusak atau salah tafsir sebagai entity HTML.
@@ -5714,9 +6300,18 @@ renderList(listEsaiEl, belumEsai, 'sky');
     function toPlainAsciiForPdf(str) {
       if (str === null || str === undefined) return '';
       return String(str)
+        .replace(/[\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')  // aneka spasi khusus -> spasi biasa
+        .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'")               // kutip tunggal melengkung
+        .replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"')               // kutip ganda melengkung
+        .replace(/[\u2010-\u2015\u2212]/g, '-')                          // aneka tanda pisah/strip
+        .replace(/\u2026/g, '...')                                       // elipsis
+        .replace(/[\u2022\u25CF\u25AA]/g, '-')                           // bullet
+        .replace(/\r\n?/g, '\n')                                         // samakan baris baru
+        .replace(/\t/g, ' ')
         .normalize('NFKD')                // urai font unicode "gaya" & huruf beraksen ke bentuk dasar
         .replace(/[\u0300-\u036f]/g, '')  // buang tanda diakritik hasil urai (mis. é -> e)
-        .replace(/[^\x20-\x7E]/g, '');    // buang sisa karakter non-ASCII (emoji, zero-width, dll)
+        .replace(/[^\x20-\x7E\n]/g, '')   // buang sisa non-ASCII (emoji, zero-width, dll), baris baru dipertahankan
+        .replace(/[ ]{2,}/g, ' ');        // rapikan spasi ganda
     }
 
     function printHtmlContent(html) {
@@ -5917,7 +6512,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
           });
         }
       }
-      doc.save('LJK_Korek51.pdf');
+      doc.save(`LJK_Korek51 ${stempelWaktuFile()}.pdf`);
       showToast('LJK berhasil diunduh (PDF)!', 'success');
     }
 
@@ -6024,7 +6619,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
         const ws2 = XLSX.utils.aoa_to_sheet(sheet2);
         XLSX.utils.book_append_sheet(wb, ws1, 'Rekap Nilai Siswa');
         XLSX.utils.book_append_sheet(wb, ws2, 'Analisis Butir Soal');
-        XLSX.writeFile(wb, `Analisis_PG_${sanitizeFilenamePart(mapel)}_Korek51.xlsx`);
+        XLSX.writeFile(wb, `Analisis_PG_${sanitizeFilenamePart(mapel)}_Korek51 ${stempelWaktuFile()}.xlsx`);
         showToast('Analisis PG diunduh (Excel)!', 'success'); return;
       }
 
@@ -6225,7 +6820,10 @@ renderList(listEsaiEl, belumEsai, 'sky');
       doc.setFont('helvetica', 'normal');
       doc.text(`${mapel} - Total Peserta: ${total}`, pageWidth / 2, 21, { align: 'center' });
 
-      const bodySiswa = pgList.filter(Boolean).map(r => {
+      const bodySiswa = pgList.filter(Boolean)
+        .slice()
+        .sort((a, b) => (a.nama || '').localeCompare(b.nama || '', 'id', { sensitivity: 'base' }))
+        .map(r => {
         const nilai = parseFloat(r.nilai||0);
         const status = nilai >= kkm ? 'TUNTAS' : 'REMIDI';
         return [toPlainAsciiForPdf(r.nama)||'', r.benar||0, r.salah||0, r.kosong||0, nilai.toFixed(2), status, (r.jawaban||'').toUpperCase()];
@@ -6264,7 +6862,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
         headStyles: { fillColor: [30, 58, 138], lineColor: [0, 0, 0], lineWidth: 0.1 }
       });
 
-      doc.save(`Analisis_PG_${sanitizeFilenamePart(mapel)}_Korek51.pdf`);
+      doc.save(`Analisis_PG_${sanitizeFilenamePart(mapel)}_Korek51 ${stempelWaktuFile()}.pdf`);
       showToast('Analisis PG berhasil diunduh (PDF)!', 'success');
     }
 
@@ -6323,7 +6921,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
         const ws = XLSX.utils.aoa_to_sheet(sheetData);
         ws['!merges'] = (ws['!merges'] || []).concat(esaiMerges);
         XLSX.utils.book_append_sheet(wb, ws, 'Analisis Esai');
-        XLSX.writeFile(wb, `Analisis_Esai_${sanitizeFilenamePart(mapelEsai)}_Korek51.xlsx`);
+        XLSX.writeFile(wb, `Analisis_Esai_${sanitizeFilenamePart(mapelEsai)}_Korek51 ${stempelWaktuFile()}.xlsx`);
         showToast('Analisis Esai diunduh (Excel)!', 'success'); return;
       }
 
@@ -6384,37 +6982,45 @@ renderList(listEsaiEl, belumEsai, 'sky');
       doc.text('ANALISIS JAWABAN ESAI', pageWidth / 2, 15, { align: 'center' });
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Mata Pelajaran: ${mapelEsai}`, pageWidth / 2, 21, { align: 'center' });
+      doc.text(`Mata Pelajaran: ${toPlainAsciiForPdf(mapelEsai)}`, pageWidth / 2, 21, { align: 'center' });
 
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const maxTextWidth = pageWidth - 28;   // margin kiri 14 + kanan 14
+      const lineH = 4.6;
       let curY = 27;
-      if (stimulus) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Teks Bacaan / Stimulus:', 14, curY);
-        doc.setFont('helvetica', 'normal');
-        const wrapped = doc.splitTextToSize(stimulus, 180);
-        doc.text(wrapped, 14, curY + 5);
-        curY += 5 + wrapped.length * 4.2 + 4;
-      }
-      doc.setFont('helvetica', 'bold');
-      doc.text('Daftar Pertanyaan Esai:', 14, curY);
-      doc.setFont('helvetica', 'normal');
-      soalList.forEach((q, qi) => {
-        curY += 5;
-        const wrapped = doc.splitTextToSize(`${qi+1}. ${q}`, 180);
-        doc.text(wrapped, 14, curY);
-        curY += (wrapped.length - 1) * 4.2;
 
-        curY += 4.5;
+      // Tulis teks panjang: dibungkus sesuai lebar halaman, pindah halaman otomatis jika tidak muat
+      const tulisTeks = (teks, bold) => {
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setFontSize(10);
+        const lines = doc.splitTextToSize(toPlainAsciiForPdf(teks), maxTextWidth);
+        lines.forEach(line => {
+          if (curY > pageHeight - 15) { doc.addPage(); curY = 15; }
+          doc.text(line, 14, curY);
+          curY += lineH;
+        });
+      };
+
+      if (stimulus) {
+        tulisTeks('Teks Bacaan / Stimulus:', true);
+        tulisTeks(stimulus, false);
+        curY += 3;
+      }
+      tulisTeks('Daftar Pertanyaan Esai:', true);
+      soalList.forEach((q, qi) => {
+        tulisTeks(`${qi+1}. ${q}`, false);
         const kunciSoal = getKunciJawabanUntukSoal(esaiList, qi);
-        doc.setFont('helvetica', 'bold');
-        const wrappedKunci = doc.splitTextToSize(`Kunci ${qi+1}: ${kunciSoal || '-'}`, 180);
-        doc.text(wrappedKunci, 14, curY);
-        doc.setFont('helvetica', 'normal');
-        curY += (wrappedKunci.length - 1) * 4.2;
+        tulisTeks(`Kunci ${qi+1}: ${kunciSoal || '-'}`, true);
+        curY += 1.5;
       });
+      doc.setFont('helvetica', 'normal');
 
       const body = [];
-      esaiList.forEach((r, idx) => {
+      const esaiListUrut = esaiList
+        .filter(Boolean)
+        .slice()
+        .sort((a, b) => (a.nama || '').localeCompare(b.nama || '', 'id', { sensitivity: 'base' }));
+      esaiListUrut.forEach((r, idx) => {
         if (!r) return;
         const sudah = !!r.sudahDinilai && r.nilai !== null;
         const totalNilai = sudah ? parseFloat(r.nilai).toFixed(2) : '-';
@@ -6446,7 +7052,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
         headStyles: { fillColor: [217, 119, 6], lineColor: [0, 0, 0], lineWidth: 0.1 }
       });
 
-      doc.save(`Analisis_Esai_${sanitizeFilenamePart(mapelEsai)}_Korek51.pdf`);
+      doc.save(`Analisis_Esai_${sanitizeFilenamePart(mapelEsai)}_Korek51 ${stempelWaktuFile()}.pdf`);
       showToast('Analisis Esai berhasil diunduh (PDF)!', 'success');
     }
 
@@ -6471,7 +7077,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
         const ws = XLSX.utils.aoa_to_sheet(sheetData);
         XLSX.utils.book_append_sheet(wb, ws, 'Nilai Gabungan');
         const gabunganNamaFile = sanitizeFilenamePart(appData.config.mapel) + '_' + sanitizeFilenamePart(appData.config.mapelEsai);
-        XLSX.writeFile(wb, `Nilai_Gabungan_${gabunganNamaFile}_Korek51.xlsx`);
+        XLSX.writeFile(wb, `Nilai_Gabungan_${gabunganNamaFile}_Korek51 ${stempelWaktuFile()}.xlsx`);
         showToast('Nilai Gabungan diunduh (Excel)!', 'success');
         return;
       }
@@ -6486,7 +7092,10 @@ renderList(listEsaiEl, belumEsai, 'sky');
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`Bobot PG: ${bobotPG}% | Bobot Esai: ${bobotEsai}% | Total Peserta: ${allStudents.length}`, pageWidth / 2, 21, { align: 'center' });
-        const body = allStudents.map((nama, idx) => {
+        const allStudentsUrut = allStudents
+          .slice()
+          .sort((a, b) => a.localeCompare(b, 'id', { sensitivity: 'base' }));
+        const body = allStudentsUrut.map((nama, idx) => {
           const pg = pgList.find(r => r?.nama === nama);
           const esai = esaiList.find(r => r?.nama === nama);
           const scorePG = pg ? parseFloat(pg.nilai) || 0 : 0;
@@ -6503,7 +7112,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
           headStyles: { fillColor: [67, 56, 202], lineColor: [0, 0, 0], lineWidth: 0.1 }
         });
         const gabunganNamaFilePdf = sanitizeFilenamePart(appData.config.mapel) + '_' + sanitizeFilenamePart(appData.config.mapelEsai);
-        doc.save(`Nilai_Gabungan_${gabunganNamaFilePdf}_Korek51.pdf`);
+        doc.save(`Nilai_Gabungan_${gabunganNamaFilePdf}_Korek51 ${stempelWaktuFile()}.pdf`);
         showToast('Nilai Gabungan berhasil diunduh (PDF)!', 'success');
         return;
       }
