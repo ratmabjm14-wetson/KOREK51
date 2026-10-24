@@ -995,10 +995,9 @@
 
 PENTING - SKEMA PENILAIAN:
 - Total nilai esai murid adalah 0-100 untuk SELURUH soal (bukan per soal 0-100).
-- Bagi 100 poin tersebut secara PROPORSIONAL ke setiap butir soal sesuai bobot/kompleksitasnya.
-- Contoh: jika ada 3 butir soal dengan bobot setara, maka skor maksimal tiap soal kira-kira 33, 33, 34 (totalnya harus 100).
-- Skor yang diberikan untuk tiap soal HARUS merupakan pecahan dari skor maksimal soal tersebut, sesuai kualitas jawaban murid.
-- Jumlahkan seluruh skor per soal milik satu murid harus sama dengan nilai akhir esai murid tersebut (skala 0-100).
+- Skor maksimal tiap soal SUDAH DITENTUKAN pada bagian "SKOR MAKSIMAL PER SOAL" di bawah. Gunakan angka tersebut apa adanya, jangan membagi ulang sendiri.
+- Skor yang diberikan untuk tiap soal tidak boleh melebihi skor maksimal soal tersebut. Berikan skor sesuai kualitas jawaban murid (boleh sebagian dari skor maksimal).
+- Jumlah seluruh skor per soal milik satu murid adalah nilai akhir esai murid tersebut (skala 0-100).
 
 FORMAT KELUARAN (satu baris per murid):
 [Nama Murid];;[Skor Soal1]|[Alasan Soal1];;[Kunci Jawaban Soal1];;[Skor Soal2]|[Alasan Soal2];;[Kunci Jawaban Soal2];;dst
@@ -1352,7 +1351,7 @@ FORMAT KELUARAN (satu baris per murid):
     // GANTI URL DI BAWAH INI dengan URL deployment Apps Script Anda
     // (hasil dari Deploy > Manage deployments, yang diakhiri /exec)
     // ============================================================
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz2DbDIDKlbfQLd2BuMhZ76x-8KDnoD9fnbKVNytYCBMlTUD2u4TNjRPjS9V2G8dy2-aw/exec';
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzamppucxe31f0SjIcvDwgm1scgdPJr6lrGYhak5wvGMI2h8PWnk7fN7R3oE9Hp5ZiBvg/exec';
 
     // ============================================================
     // SYNC OVERLAY — loading modern saat kirim/ambil data Spreadsheet
@@ -2706,15 +2705,36 @@ FORMAT KELUARAN (satu baris per murid):
     }
 
     // ============================================================
+    // CEK MATA PELAJARAN (dipakai 5 tombol pembuat soal)
+    // ============================================================
+    function cekMapelPGTerisi() {
+      const el = document.getElementById('config-mapel');
+      const val = el ? el.value.trim() : '';
+      if (!val) {
+        showToast('Nama Mata Pelajaran PG belum diisi! Isi dulu di kolom Mata Pelajaran.', 'warning');
+        if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        return false;
+      }
+      return true;
+    }
+
+    function cekMapelEsaiTerisi() {
+      const el = document.getElementById('config-mapel-esai');
+      const val = el ? el.value.trim() : '';
+      if (!val) {
+        showToast('Nama Mata Pelajaran Esai belum diisi! Isi dulu di kolom Mata Pelajaran.', 'warning');
+        if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        return false;
+      }
+      return true;
+    }
+
+    // ============================================================
     // FIX: savePGKeyMatrix — sekarang juga menyimpan Mata Pelajaran PG
     // ============================================================
     function savePGKeyMatrix(event) {
-      const mapelVal = document.getElementById('config-mapel') ? document.getElementById('config-mapel').value.trim() : '';
-      if (!mapelVal) {
-        showToast('Nama Mata Pelajaran PG belum diisi!', 'warning');
-        document.getElementById('config-mapel').focus();
-        return;
-      }
+      if (!cekMapelPGTerisi()) return;
+      const mapelVal = document.getElementById('config-mapel').value.trim();
       const emptyNums = [];
       const numQ = appData.config.jumlahSoal || 5;
       for (let i = 1; i <= numQ; i++) {
@@ -2983,6 +3003,7 @@ FORMAT KELUARAN (satu baris per murid):
 
     // Tambah 1 soal saja dari isi textarea (dianggap satu kesatuan teks utuh)
     function addSingleEssayQuestion() {
+      if (!cekMapelEsaiTerisi()) return;
       const input = document.getElementById('config-esai-add-text');
       const text = input.value.trim();
       if (!text) { showToast('Tuliskan soal terlebih dahulu.', 'warning'); return; }
@@ -2998,6 +3019,7 @@ FORMAT KELUARAN (satu baris per murid):
 
     // Tambah banyak soal sekaligus, dipisah dengan ";;" atau "..." (titik 3 atau lebih)
     function addMultipleEssayQuestions() {
+      if (!cekMapelEsaiTerisi()) return;
       const input = document.getElementById('config-esai-add-text');
       const rawText = input.value.trim();
       if (!rawText) { showToast('Tuliskan soal terlebih dahulu.', 'warning'); return; }
@@ -3048,8 +3070,10 @@ FORMAT KELUARAN (satu baris per murid):
       if (!inputEl || !autoEl) return;
       const manual = isWaktuManual(jenis);
       autoEl.checked = !manual;
+      // Hanya tampilkan waktu yang TERSIMPAN (saat soal dibuat/disimpan).
+      // Jangan isi jam sekarang saat aplikasi dibuka.
       const tersimpan = appData.config[c.key] ? formatWaktuInput(appData.config[c.key]) : '';
-      inputEl.value = tersimpan || formatWaktuInput(new Date());
+      inputEl.value = tersimpan;
     }
 
     function onWaktuAutoToggle(jenis) {
@@ -3058,7 +3082,11 @@ FORMAT KELUARAN (satu baris per murid):
       const autoEl = document.getElementById(c.auto);
       if (!inputEl || !autoEl) return;
       appData.config[c.manualKey] = !autoEl.checked;
-      if (autoEl.checked) inputEl.value = formatWaktuInput(new Date());
+      // Saat kembali ke mode Otomatis, tampilkan lagi waktu tersimpan.
+      // Waktu baru baru diisi saat tombol simpan/buat soal diklik.
+      if (autoEl.checked) {
+        inputEl.value = appData.config[c.key] ? formatWaktuInput(appData.config[c.key]) : '';
+      }
     }
 
     function onWaktuManualChanged(jenis) {
@@ -3086,12 +3114,8 @@ FORMAT KELUARAN (satu baris per murid):
     // FIX: saveEssayConfig — sekarang juga menyimpan Mata Pelajaran Esai
     // ============================================================
     function saveEssayConfig(event, langsung = false) {
-      const mapelEsaiVal = document.getElementById('config-mapel-esai') ? document.getElementById('config-mapel-esai').value.trim() : '';
-      if (!mapelEsaiVal) {
-        showToast('Nama Mata Pelajaran Esai belum diisi!', 'warning');
-        document.getElementById('config-mapel-esai').focus();
-        return;
-      }
+      if (!cekMapelEsaiTerisi()) return;
+      const mapelEsaiVal = document.getElementById('config-mapel-esai').value.trim();
       appData.config.teksBacaan = document.getElementById('config-esai-stimulus').value;
       appData.config.mapelEsai = mapelEsaiVal;
       updateMapelDisplays();
@@ -3138,17 +3162,29 @@ FORMAT KELUARAN (satu baris per murid):
       const stimulus = (appData.config.teksBacaan || '').trim();
       const soalList = Array.isArray(appData.config.soalEsaiList) ? appData.config.soalEsaiList : [];
 
-      // Hitung bobot maks per soal: bagi 100 proporsional, soal pertama dapat sisa pembulatan
+      // Hitung skor maks per soal.
+      // - Jika 100 habis dibagi jumlah soal (1,2,4,5,10,20,25,50) -> dibagi RATA.
+      // - Jika tidak, bagi rata dibulatkan ke bawah, sisa poin ditambahkan 1 per soal
+      //   mulai dari soal TERAKHIR (mis. 3 soal -> 33, 33, 34).
       const jumlahSoal = soalList.length;
       let bobotPerSoal = [];
+      let bobotMerata = true;
       if (jumlahSoal > 0) {
         const base = Math.floor(100 / jumlahSoal);
         const sisa = 100 - base * jumlahSoal;
+        bobotMerata = (sisa === 0);
         for (let i = 0; i < jumlahSoal; i++) {
-          bobotPerSoal.push(i === 0 ? base + sisa : base);
+          bobotPerSoal.push(base + (i >= jumlahSoal - sisa ? 1 : 0));
         }
       }
-      const bobotStr = bobotPerSoal.map((b, i) => `soal ${i+1} maks ${b} poin`).join(', ');
+      let bobotInfo = '';
+      if (jumlahSoal > 0) {
+        bobotInfo = 'SKOR MAKSIMAL PER SOAL (total = 100):\n';
+        bobotInfo += bobotPerSoal.map((b, i) => `- Soal ${i + 1}: maksimal ${b} poin`).join('\n') + '\n';
+        bobotInfo += bobotMerata
+          ? 'Skor maksimal setiap soal sama rata.\n'
+          : 'Skor maksimal dibulatkan agar total tepat 100.\n';
+      }
 
       const templateTextarea = document.getElementById('ai-prompt-template');
       const kalimatNilai = stimulus
@@ -3172,6 +3208,7 @@ FORMAT KELUARAN (satu baris per murid):
       const promptTemplate = (templateTextarea || {}).value || '';
 
       let payload = promptTemplate + '\n\n' + '='.repeat(50) + '\n';
+      if (bobotInfo) { payload += bobotInfo + '\n' + '='.repeat(50) + '\n'; }
       if (stimulus) { payload += 'TEKS BACAAN / STIMULUS:\n' + stimulus + '\n\n' + '='.repeat(50) + '\n'; }
       payload += 'DAFTAR BUTIR SOAL:\n';
       soalList.forEach((q, idx) => { payload += `Soal ${idx + 1}: ${q}\n`; });
@@ -3762,9 +3799,9 @@ if (!entry) {
 
     function doResetData(pilihan) {
       if (pilihan.mapelPG) appData.config.mapel = '';
-      if (pilihan.kunciPG) { appData.config.kunciPG = ''; pgKeyMatrixState = {}; appData.config.soalPGList = []; const tsp = document.getElementById('config-soal-pg-text'); if (tsp) tsp.value = ''; }
+      if (pilihan.kunciPG) { appData.config.kunciPG = ''; appData.config.waktuKunciPG = ''; appData.config.waktuKunciPGManual = false; pgKeyMatrixState = {}; appData.config.soalPGList = []; const tsp = document.getElementById('config-soal-pg-text'); if (tsp) tsp.value = ''; }
       if (pilihan.mapelEsai) appData.config.mapelEsai = '';
-      if (pilihan.soalEsai) { appData.config.teksBacaan = ''; appData.config.soalEsaiList = []; }
+      if (pilihan.soalEsai) { appData.config.teksBacaan = ''; appData.config.soalEsaiList = []; appData.config.waktuSoalEsai = ''; appData.config.waktuSoalEsaiManual = false; }
       if (pilihan.jawabanPG) appData.pg = [];
       if (pilihan.jawabanEsai) appData.esai = [];
       if (pilihan.pelanggaranMurid) { cheatViolationsLog = {}; loadCheatViolations(); }
@@ -3854,6 +3891,7 @@ if (!entry) {
     }
 
     function muatSoalPGDariTeks() {
+      if (!cekMapelPGTerisi()) return;
       const ta = document.getElementById('config-soal-pg-text');
       const list = parseSoalPGText(ta ? ta.value : '');
       if (list.length === 0) {
@@ -6546,6 +6584,30 @@ renderList(listEsaiEl, belumEsai, 'sky');
       };
     }
 
+    // Data soal PG untuk halaman "Soal PG" di Print / PDF / Excel.
+    // Kunci diambil dari config.kunciPG (sama dengan yang dipakai menilai).
+    // Mengembalikan array kosong jika soal PG belum dimuat guru.
+    function bangunDataSoalPGUntukCetak() {
+      const list = getSoalPGList();
+      if (!list.length) return [];
+      const keysList = (appData.config.kunciPG || '').split(';');
+      return list.map((q, i) => {
+        const kunci = keysList[i]
+          ? keysList[i].split(',').map(k => k.trim().toUpperCase()).filter(Boolean)
+          : [];
+        return {
+          no: i + 1,
+          soal: String(q.soal || ''),
+          kunci: kunci,
+          opsi: (q.opsi || []).map(o => ({
+            huruf: o.huruf,
+            teks: o.teks,
+            isKunci: kunci.includes(o.huruf)
+          }))
+        };
+      });
+    }
+
     function downloadAnalisisPG(mode) {
       const pgList = Array.isArray(appData.pg) ? appData.pg : [];
       const numQ = appData.config.jumlahSoal || 5;
@@ -6619,6 +6681,27 @@ renderList(listEsaiEl, belumEsai, 'sky');
         const ws2 = XLSX.utils.aoa_to_sheet(sheet2);
         XLSX.utils.book_append_sheet(wb, ws1, 'Rekap Nilai Siswa');
         XLSX.utils.book_append_sheet(wb, ws2, 'Analisis Butir Soal');
+
+        // Sheet 3: Soal PG (hanya jika soal sudah dimuat guru)
+        const dataSoalXls = bangunDataSoalPGUntukCetak();
+        if (dataSoalXls.length > 0) {
+          const sheet3 = [
+            ['SOAL PILIHAN GANDA (PG)'],
+            [`Mata Pelajaran: ${mapel}`, `Jumlah Soal: ${dataSoalXls.length}`],
+            [],
+            ['NO', 'SOAL', ...options, 'KUNCI']
+          ];
+          dataSoalXls.forEach(q => {
+            const teksOpsi = options.map(h => {
+              const o = q.opsi.find(x => x.huruf === h);
+              return o ? o.teks : '';
+            });
+            sheet3.push([q.no, q.soal, ...teksOpsi, q.kunci.join(', ') || '-']);
+          });
+          const ws3 = XLSX.utils.aoa_to_sheet(sheet3);
+          ws3['!cols'] = [{ wch: 5 }, { wch: 60 }, ...options.map(() => ({ wch: 28 })), { wch: 10 }];
+          XLSX.utils.book_append_sheet(wb, ws3, 'Soal PG');
+        }
         XLSX.writeFile(wb, `Analisis_PG_${sanitizeFilenamePart(mapel)}_Korek51 ${stempelWaktuFile()}.xlsx`);
         showToast('Analisis PG diunduh (Excel)!', 'success'); return;
       }
@@ -6683,6 +6766,38 @@ renderList(listEsaiEl, belumEsai, 'sky');
       }
 
       const optHeaders = options.map(o => `<th>${o}</th>`).join('');
+
+      // Halaman 3: Soal PG (hanya jika soal sudah dimuat guru)
+      const dataSoalPG = bangunDataSoalPGUntukCetak();
+      let soalPgPageHtml = '';
+      if (dataSoalPG.length > 0) {
+        const jumlahCfg = appData.config.jumlahSoal || dataSoalPG.length;
+        const catatanJumlah = jumlahCfg !== dataSoalPG.length
+          ? ` &nbsp;·&nbsp; PENGATURAN: ${jumlahCfg} SOAL`
+          : '';
+        const blokSoal = dataSoalPG.map(q => {
+          const opsiHtml = q.opsi.map(o => {
+            const gaya = o.isKunci
+              ? 'background:#dcfce7;font-weight:800;color:#166534;border-radius:4px;'
+              : '';
+            return `<div style="padding:2px 6px 2px 22px;${gaya}">${escapeHtml(o.huruf)}. ${escapeHtml(o.teks)}${o.isKunci ? ' <span style="font-size:11px;">(Kunci)</span>' : ''}</div>`;
+          }).join('');
+          return `<div style="margin-bottom:14px;page-break-inside:avoid;">
+            <div style="font-weight:700;white-space:pre-wrap;margin-bottom:4px;">${q.no}. ${escapeHtml(q.soal)}</div>
+            ${opsiHtml}
+          </div>`;
+        }).join('');
+        soalPgPageHtml = `
+<div class="page page-break">
+  <div class="h2-header">
+    <h1>SOAL PILIHAN GANDA (PG)</h1>
+    <p>${escapeHtml(mapel.toUpperCase())} &nbsp;·&nbsp; JUMLAH SOAL: ${dataSoalPG.length}${catatanJumlah}</p>
+  </div>
+  <div style="border:1.5px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:16px 20px;font-size:13px;line-height:1.5;">
+    ${blokSoal}
+  </div>
+</div>`;
+      }
 
       const html = `<!DOCTYPE html>
 <html>
@@ -6796,7 +6911,7 @@ renderList(listEsaiEl, belumEsai, 'sky');
     </table>
   </div>
 </div>
-
+${soalPgPageHtml}
 </body>
 </html>`;
 
@@ -6861,6 +6976,65 @@ renderList(listEsaiEl, belumEsai, 'sky');
         styles: { fontSize: 8, lineColor: [0, 0, 0], lineWidth: 0.1 },
         headStyles: { fillColor: [30, 58, 138], lineColor: [0, 0, 0], lineWidth: 0.1 }
       });
+
+      // Halaman terakhir: Soal PG (hanya jika soal sudah dimuat guru)
+      const dataSoalPdf = bangunDataSoalPGUntukCetak();
+      if (dataSoalPdf.length > 0) {
+        doc.addPage();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const maxW = pageWidth - 28;
+        const lineH = 4.8;
+        let y = 15;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.text('SOAL PILIHAN GANDA (PG)', pageWidth / 2, y, { align: 'center' });
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        const jumlahCfg = appData.config.jumlahSoal || dataSoalPdf.length;
+        const catatan = jumlahCfg !== dataSoalPdf.length ? ` (Pengaturan: ${jumlahCfg} soal)` : '';
+        doc.text(`${toPlainAsciiForPdf(mapel)} - Jumlah Soal: ${dataSoalPdf.length}${catatan}`, pageWidth / 2, y, { align: 'center' });
+        y += 4;
+        doc.setDrawColor(30, 41, 59);
+        doc.line(14, y, pageWidth - 14, y);
+        y += 7;
+
+        dataSoalPdf.forEach(q => {
+          // Susun baris: soal + semua opsi, lalu bungkus sesuai lebar halaman
+          const blok = [{ teks: `${q.no}. ${q.soal}`, indent: 0, bold: true }];
+          q.opsi.forEach(o => {
+            blok.push({
+              teks: `${o.huruf}. ${o.teks}${o.isKunci ? ' (Kunci)' : ''}`,
+              indent: 6,
+              bold: o.isKunci
+            });
+          });
+          blok.forEach(b => {
+            doc.setFont('helvetica', b.bold ? 'bold' : 'normal');
+            doc.setFontSize(10);
+            b.lines = doc.splitTextToSize(toPlainAsciiForPdf(b.teks), maxW - b.indent);
+          });
+
+          // Usahakan satu soal utuh di satu halaman
+          const tinggiBlok = blok.reduce((s, b) => s + b.lines.length * lineH, 0);
+          if (y + tinggiBlok > pageHeight - 15 && tinggiBlok < pageHeight - 30) {
+            doc.addPage();
+            y = 15;
+          }
+
+          blok.forEach(b => {
+            doc.setFont('helvetica', b.bold ? 'bold' : 'normal');
+            doc.setFontSize(10);
+            b.lines.forEach(line => {
+              if (y > pageHeight - 15) { doc.addPage(); y = 15; }
+              doc.text(line, 14 + b.indent, y);
+              y += lineH;
+            });
+          });
+          y += 3;
+        });
+      }
 
       doc.save(`Analisis_PG_${sanitizeFilenamePart(mapel)}_Korek51 ${stempelWaktuFile()}.pdf`);
       showToast('Analisis PG berhasil diunduh (PDF)!', 'success');
